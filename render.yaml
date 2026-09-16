@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: 3d-lotus
+    env: static
+    buildCommand: ""
+    staticPublishPath: ./

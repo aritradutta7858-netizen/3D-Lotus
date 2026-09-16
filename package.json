@@ -1,0 +1,16 @@
+{
+  "name": "3d-lotus",
+  "version": "1.0.0",
+  "description": "Luminous Lotus - 3D WebGL Crystal Lotus Experience",
+  "scripts": {
+    "build": "mkdir -p build && cp -r index.html *.mp3 *.jpg build/ 2>/dev/null || true"
+  },
+  "keywords": [
+    "threejs",
+    "webgl",
+    "3d",
+    "lotus"
+  ],
+  "author": "Aritra",
+  "license": "MIT"
+}
