@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Luminous Lotus — Ethereal 3D WebGL Experience</title>
     <meta name="description"
         content="An interactive 3D crystal glowing lotus flower experience crafted with Three.js and WebGL.">
@@ -58,12 +58,16 @@
         body {
             width: 100%;
             height: 100%;
+            height: 100dvh;
             overflow: hidden;
             background-color: var(--bg-color);
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             color: var(--text-primary);
             user-select: none;
             -webkit-user-select: none;
+            position: fixed;
+            top: 0;
+            left: 0;
         }
 
         canvas {
@@ -75,6 +79,7 @@
             top: 0;
             left: 0;
             z-index: 0;
+            touch-action: none;
         }
 
         /* Ambient Cosmic Background Aura */
@@ -593,30 +598,51 @@
         /* Responsive adjustments for mobile devices */
         @media (max-width: 768px) {
             header {
-                padding: 18px 20px;
+                padding: 12px 16px;
             }
 
             .brand-title {
-                font-size: 1rem;
+                font-size: 0.95rem;
+                letter-spacing: 0.18em;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            .icon-btn {
+                width: 34px;
+                height: 34px;
+            }
+
+            .icon-btn svg {
+                width: 15px;
+                height: 15px;
             }
 
             #dock-container {
-                width: 92%;
-                bottom: 16px;
-                justify-content: space-around;
-                padding: 6px 8px;
-                gap: 2px;
+                width: calc(100% - 24px);
+                max-width: 380px;
+                bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+                justify-content: space-between;
+                padding: 5px 6px;
+                gap: 1px;
             }
 
             .dock-btn {
-                padding: 8px 10px;
-                font-size: 0.7rem;
-                gap: 4px;
+                min-width: 36px;
+                height: 36px;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 12px;
+                gap: 0;
             }
 
             .dock-btn span {
                 display: none;
-                /* Icon-only on small mobile screens */
+                /* Icon-only on mobile screens */
             }
 
             .dock-btn svg {
@@ -624,8 +650,20 @@
                 height: 17px;
             }
 
+            .dock-divider {
+                height: 16px;
+                margin: 0 1px;
+            }
+
+            #btn-show-ui {
+                bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+                right: 18px;
+                width: 38px;
+                height: 38px;
+            }
+
             #watermark {
-                bottom: 74px;
+                bottom: calc(66px + env(safe-area-inset-bottom, 0px));
                 left: 50%;
                 transform: translateX(-50%);
                 padding: 5px 12px;
@@ -645,7 +683,7 @@
             }
 
             #wm-toast {
-                bottom: 108px;
+                bottom: calc(102px + env(safe-area-inset-bottom, 0px));
                 left: 50%;
                 transform: translateX(-50%) translateY(6px) scale(0.92);
             }
@@ -655,8 +693,8 @@
             }
 
             #hint {
-                bottom: 114px;
-                font-size: 0.65rem;
+                bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+                font-size: 0.62rem;
             }
         }
     </style>
@@ -849,14 +887,47 @@
         // ============================================================
         const scene = new THREE.Scene();
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        const REEL_CAM_POS = new THREE.Vector3(0, 2.5, 5.2);
-        const REEL_CAM_TARGET = new THREE.Vector3(0, 0.55, 0);
-        const TOP_CAM_POS = new THREE.Vector3(0, 7.2, 0.01);
-        const TOP_CAM_TARGET = new THREE.Vector3(0, 0.45, 0);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
 
-        // Start from Top View at the beginning as requested!
-        camera.position.copy(TOP_CAM_POS);
+        // Aspect-ratio aware dynamic camera calculations for all screen sizes & mobile portrait:
+        // Tree branches extend outward to r = 5.2. With a generous framing multiplier,
+        // we target visible radius = 7.4 to guarantee the entire flower mandala and growing roots
+        // fit with elegant cosmic negative space, starting fully zoomed out without being clipped.
+        function getOptimalTopCamPos() {
+            const aspect = window.innerWidth / window.innerHeight;
+            const targetY = 0.45;
+            const targetRadius = 7.4;
+            const vFovHalf = (camera.fov * Math.PI) / 360; // 22.5 deg
+            const tanFov = Math.tan(vFovHalf); // ~0.4142
+            // On portrait screens (aspect < 1.0), visible width = height * aspect.
+            // Scale camera distance so horizontal width accommodates full flower + roots comfortably.
+            const effectiveAspect = Math.min(1.0, Math.max(0.32, aspect));
+            const dist = targetRadius / (tanFov * effectiveAspect);
+            return new THREE.Vector3(0, targetY + dist, 0.01);
+        }
+
+        function getOptimalReelCamPos() {
+            const aspect = window.innerWidth / window.innerHeight;
+            const baseDist = 5.8;
+            const scale = aspect < 1.0 ? Math.min(2.5, 1.0 / Math.pow(aspect, 0.82)) : 1.0;
+            const dist = baseDist * scale;
+            const pitch = 0.46; // ~26.3 deg
+            return new THREE.Vector3(0, 0.55 + dist * Math.sin(pitch), dist * Math.cos(pitch));
+        }
+
+        function getOptimalSideCamPos() {
+            const aspect = window.innerWidth / window.innerHeight;
+            const baseDist = 6.2;
+            const scale = aspect < 1.0 ? Math.min(2.5, 1.0 / Math.pow(aspect, 0.85)) : 1.0;
+            const dist = baseDist * scale;
+            return new THREE.Vector3(dist, 1.15, 0.0);
+        }
+
+        const TOP_CAM_TARGET = new THREE.Vector3(0, 0.45, 0);
+        const REEL_CAM_TARGET = new THREE.Vector3(0, 0.55, 0);
+
+        // Start fully zoomed out from Top View at the beginning as requested!
+        camera.position.copy(getOptimalTopCamPos());
         camera.lookAt(TOP_CAM_TARGET);
 
         const renderer = new THREE.WebGLRenderer({
@@ -878,8 +949,8 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.target.copy(TOP_CAM_TARGET);
-            controls.maxDistance = 14;
-            controls.minDistance = 2.5;
+            controls.maxDistance = 150;
+            controls.minDistance = 2.0;
             controls.maxPolarAngle = Math.PI / 2 + 0.05;
         }
 
@@ -1555,16 +1626,16 @@
         // ============================================================
         // FLOATING DUST MOTES & BOKEH EMBERS
         // ============================================================
-        const particleCount = 180;
+        const particleCount = 280;
         const pGeo = new THREE.BufferGeometry();
         const pPositions = new Float32Array(particleCount * 3);
         const pSpeeds = new Float32Array(particleCount);
         const pPhases = new Float32Array(particleCount);
 
         for (let i = 0; i < particleCount; i++) {
-            pPositions[i * 3 + 0] = (Math.random() - 0.5) * 14;
-            pPositions[i * 3 + 1] = Math.random() * 6.5 - 0.5;
-            pPositions[i * 3 + 2] = (Math.random() - 0.5) * 14;
+            pPositions[i * 3 + 0] = (Math.random() - 0.5) * 30;
+            pPositions[i * 3 + 1] = Math.random() * 12.0 - 1.0;
+            pPositions[i * 3 + 2] = (Math.random() - 0.5) * 30;
             pSpeeds[i] = 0.3 + Math.random() * 0.7;
             pPhases[i] = Math.random() * Math.PI * 2;
         }
@@ -1740,17 +1811,20 @@
         const btnShowUi = document.getElementById('btn-show-ui');
         const dockContainer = document.getElementById('dock-container');
         const hint = document.getElementById('hint');
+        if (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) {
+            if (hint) hint.textContent = 'Drag to Orbit · Pinch to Zoom';
+        }
 
         btnReel.addEventListener('click', () => {
-            setCameraPreset(new THREE.Vector3(0, 2.5, 5.2), new THREE.Vector3(0, 0.55, 0), btnReel);
+            setCameraPreset(getOptimalReelCamPos(), REEL_CAM_TARGET, btnReel);
         });
 
         btnTop.addEventListener('click', () => {
-            setCameraPreset(new THREE.Vector3(0, 7.2, 0.01), new THREE.Vector3(0, 0.45, 0), btnTop);
+            setCameraPreset(getOptimalTopCamPos(), TOP_CAM_TARGET, btnTop);
         });
 
         btnSide.addEventListener('click', () => {
-            setCameraPreset(new THREE.Vector3(5.8, 1.2, 0.0), new THREE.Vector3(0, 0.6, 0), btnSide);
+            setCameraPreset(getOptimalSideCamPos(), new THREE.Vector3(0, 0.6, 0), btnSide);
         });
 
         btnBloom.addEventListener('click', () => {
@@ -2104,9 +2178,9 @@
                 posArr[i3 + 1] += 0.0035 * pSpeeds[i];
 
                 // Re-cycle when reaching top
-                if (posArr[i3 + 1] > 6.0) {
-                    posArr[i3 + 1] = -0.4;
-                    const newR = 1.0 + Math.random() * 5.5;
+                if (posArr[i3 + 1] > 11.0) {
+                    posArr[i3 + 1] = -0.8;
+                    const newR = 1.0 + Math.random() * 15.0;
                     const newAngle = Math.random() * Math.PI * 2;
                     posArr[i3 + 0] = Math.cos(newAngle) * newR;
                     posArr[i3 + 2] = Math.sin(newAngle) * newR;
@@ -2126,14 +2200,39 @@
         animate();
 
         // ============================================================
-        // WINDOW RESIZE HANDLER (Responsive DPR & Aspect)
+        // WINDOW RESIZE HANDLER (Responsive DPR, Aspect & Adaptive Camera)
         // ============================================================
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.aspect = aspect;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+
+            // Dynamically re-frame active preset on resize or screen orientation change
+            if (btnTop && btnTop.classList.contains('active')) {
+                const topPos = getOptimalTopCamPos();
+                camera.position.copy(topPos);
+                if (controls) {
+                    controls.target.copy(TOP_CAM_TARGET);
+                    controls.update();
+                }
+            } else if (btnReel && btnReel.classList.contains('active')) {
+                const reelPos = getOptimalReelCamPos();
+                camera.position.copy(reelPos);
+                if (controls) {
+                    controls.target.copy(REEL_CAM_TARGET);
+                    controls.update();
+                }
+            } else if (btnSide && btnSide.classList.contains('active')) {
+                const sidePos = getOptimalSideCamPos();
+                camera.position.copy(sidePos);
+                if (controls) {
+                    controls.target.set(0, 0.6, 0);
+                    controls.update();
+                }
+            }
         });
     </script>
 </body>
