@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Luminous Lotus — Ethereal 3D WebGL Experience</title>
+    <meta name="description"
+        content="An interactive 3D crystal glowing lotus flower experience crafted with Three.js and WebGL.">
+    <meta property="og:title" content="Luminous Lotus — 3D Experience">
+    <meta property="og:description"
+        content="Explore an ethereal, blooming crystal lotus with glowing starlight tips and procedural physics.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#07020d">
+
+    <!-- Inline SVG Favicon to avoid 404 console errors -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪷</text></svg>">
+
+    <!-- Google Fonts for Luxury Editorial Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Plus+Jakarta+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Post-processing for Dreamy Ethereal Bloom -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #06020c;
+            --accent-pink: #f43f7e;
+            --accent-gold: #ffb833;
+            --glass-bg: rgba(18, 9, 30, 0.65);
+            --glass-border: rgba(255, 180, 220, 0.18);
+            --text-primary: #fff0f7;
+            --text-secondary: rgba(255, 210, 235, 0.65);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            outline: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        /* Ambient Cosmic Background Aura */
+        #bg-aura {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 110vmin;
+            height: 110vmin;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(230, 60, 140, 0.12) 0%, rgba(140, 50, 220, 0.06) 45%, transparent 75%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            filter: blur(50px);
+            animation: auraPulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes auraPulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.92);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.15);
+                opacity: 1;
+            }
+        }
+
+        /* ============================================================
+           HEADER & NAVIGATION BAR (Editorial Luxury)
+           ============================================================ */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 28px 36px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .brand {
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .brand-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(244, 63, 126, 0.5);
+        }
+
+        .brand-subtitle {
+            font-size: 0.65rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .header-actions {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon-btn svg {
+            width: 17px;
+            height: 17px;
+            fill: currentColor;
+            transition: transform 0.25s ease;
+        }
+
+        .icon-btn:hover {
+            background: rgba(244, 63, 126, 0.25);
+            border-color: rgba(255, 180, 220, 0.5);
+            box-shadow: 0 0 16px rgba(244, 63, 126, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+
+        .icon-btn.active {
+            background: linear-gradient(135deg, rgba(244, 63, 126, 0.4), rgba(168, 85, 247, 0.4));
+            border-color: #f43f7e;
+            box-shadow: 0 0 16px rgba(244, 63, 126, 0.5);
+        }
+
+        .track-pill {
+            padding: 6px 14px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            outline: none;
+            user-select: none;
+        }
+
+        .track-pill:hover {
+            color: #ffffff;
+            background: rgba(244, 63, 126, 0.22);
+            border-color: rgba(244, 63, 126, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 0 16px rgba(244, 63, 126, 0.35);
+        }
+
+        .track-pill:active {
+            transform: scale(0.96);
+        }
+
+        .track-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .track-pill.playing .track-dot {
+            background: #f43f7e;
+            box-shadow: 0 0 8px #f43f7e;
+            animation: trackPulse 1.4s ease-in-out infinite alternate;
+        }
+
+        @keyframes trackPulse {
+            from {
+                transform: scale(0.8);
+                opacity: 0.6;
+            }
+            to {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        /* ============================================================
+           INTERACTION HINT (Fades out automatically)
+           ============================================================ */
+        #hint {
+            position: fixed;
+            bottom: 96px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.72rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.85;
+            transition: opacity 1s ease;
+        }
+
+        #hint.hidden {
+            opacity: 0;
+        }
+
+        /* ============================================================
+           BOTTOM DOCK (Modern Glassmorphic Control Bar)
+           ============================================================ */
+        #dock-container {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(244, 63, 126, 0.15);
+            z-index: 20;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+        }
+
+        #dock-container.minimized {
+            transform: translate(-50%, 110%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .dock-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        .dock-btn svg {
+            width: 15px;
+            height: 15px;
+            fill: currentColor;
+            opacity: 0.85;
+            transition: transform 0.25s ease;
+        }
+
+        .dock-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 200, 240, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .dock-btn:active {
+            transform: scale(0.96);
+        }
+
+        .dock-btn.active {
+            color: #fff;
+            background: linear-gradient(135deg, rgba(244, 63, 126, 0.35), rgba(168, 85, 247, 0.35));
+            border-color: rgba(244, 63, 126, 0.6);
+            box-shadow: 0 0 14px rgba(244, 63, 126, 0.4);
+        }
+
+        .dock-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.12);
+            margin: 0 2px;
+        }
+
+        /* Show UI floating button (when dock is minimized) */
+        #btn-show-ui {
+            position: fixed;
+            bottom: 24px;
+            right: 28px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        #btn-show-ui.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        #btn-show-ui:hover {
+            background: rgba(244, 63, 126, 0.3);
+            border-color: rgba(255, 180, 220, 0.6);
+            transform: scale(1.08);
+        }
+
+        /* ============================================================
+           CREATOR WATERMARK (Interactive Glass Badge)
+           ============================================================ */
+        #watermark {
+            position: fixed;
+            bottom: 24px;
+            left: 28px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 15px;
+            background: rgba(18, 8, 28, 0.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 30px;
+            font-size: 0.74rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: 0.04em;
+            color: rgba(255, 255, 255, 0.75);
+            cursor: pointer;
+            z-index: 22;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #watermark.minimized {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        #watermark:hover {
+            color: #ffffff;
+            background: rgba(36, 14, 52, 0.85);
+            border-color: rgba(244, 63, 126, 0.55);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 16px rgba(244, 63, 126, 0.35);
+        }
+
+        #watermark:active {
+            transform: scale(0.95) translateY(0);
+        }
+
+        .wm-sparkle {
+            color: #fbbf24;
+            font-size: 0.85rem;
+            line-height: 1;
+            display: inline-block;
+            transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.65));
+        }
+
+        #watermark:hover .wm-sparkle {
+            transform: rotate(90deg) scale(1.3);
+            color: #f43f7e;
+            filter: drop-shadow(0 0 8px rgba(244, 63, 126, 0.9));
+        }
+
+        .wm-name {
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #ffffff 20%, #ffd1e4 65%, #fbcfe8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.05em;
+        }
+
+        /* Floating particles container for watermark click burst */
+        .wm-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 99;
+            font-size: 0.9rem;
+            animation: floatParticle 1s ease-out forwards;
+        }
+
+        @keyframes floatParticle {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(0.8);
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--dx), var(--dy)) scale(1.6);
+            }
+        }
+
+        /* Mini interactive popup tooltip when clicked */
+        #wm-toast {
+            position: fixed;
+            bottom: 64px;
+            left: 28px;
+            padding: 6px 13px;
+            background: rgba(22, 10, 36, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(244, 63, 126, 0.45);
+            border-radius: 20px;
+            font-size: 0.70rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #ffe4f0;
+            letter-spacing: 0.04em;
+            pointer-events: none;
+            z-index: 30;
+            opacity: 0;
+            transform: translateY(6px) scale(0.92);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(244, 63, 126, 0.25);
+        }
+
+        #wm-toast.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* ============================================================
+           LOADING SCREEN (Silky Smooth Fade)
+           ============================================================ */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #06020c;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 100;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #loader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-halo {
+            width: 54px;
+            height: 54px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loader-ring {
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(244, 63, 126, 0.15);
+            border-top-color: var(--accent-pink);
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+        }
+
+        .loader-core {
+            width: 12px;
+            height: 12px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            box-shadow: 0 0 16px var(--accent-gold);
+            animation: coreBreathe 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes coreBreathe {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        .loader-text {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.35em;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            text-shadow: 0 0 14px rgba(244, 63, 126, 0.5);
+        }
+
+        /* Responsive adjustments for mobile devices */
+        @media (max-width: 768px) {
+            header {
+                padding: 18px 20px;
+            }
+
+            .brand-title {
+                font-size: 1rem;
+            }
+
+            #dock-container {
+                width: 92%;
+                bottom: 16px;
+                justify-content: space-around;
+                padding: 6px 8px;
+                gap: 2px;
+            }
+
+            .dock-btn {
+                padding: 8px 10px;
+                font-size: 0.7rem;
+                gap: 4px;
+            }
+
+            .dock-btn span {
+                display: none;
+                /* Icon-only on small mobile screens */
+            }
+
+            .dock-btn svg {
+                width: 17px;
+                height: 17px;
+            }
+
+            #watermark {
+                bottom: 74px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 5px 12px;
+                font-size: 0.68rem;
+            }
+
+            #watermark:hover {
+                transform: translateX(-50%) translateY(-2px);
+            }
+
+            #watermark:active {
+                transform: translateX(-50%) scale(0.95);
+            }
+
+            #watermark.minimized {
+                transform: translateX(-50%) translateY(20px);
+            }
+
+            #wm-toast {
+                bottom: 108px;
+                left: 50%;
+                transform: translateX(-50%) translateY(6px) scale(0.92);
+            }
+
+            #wm-toast.show {
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+
+            #hint {
+                bottom: 114px;
+                font-size: 0.65rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="bg-aura"></div>
+
+    <!-- Editorial Header -->
+    <header>
+        <div class="brand">
+            <span class="brand-title">Luminous Lotus</span>
+            <span class="brand-subtitle"></span>
+        </div>
+        <div class="header-actions">
+            <!-- Ambient Audio Toggle -->
+            <button id="btn-audio" class="icon-btn" title="Play / Pause Ambient Music">
+                <svg viewBox="0 0 24 24" id="icon-sound">
+                    <path
+                        d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                </svg>
+            </button>
+            <button id="btn-track" class="track-pill" title="Click to Switch Soundtrack (Zen Meditation / Celestial Ambient)">
+                <span class="track-dot"></span>
+                <span id="track-name">Zen Meditation</span>
+            </button>
+            <!-- Fullscreen Toggle -->
+            <button id="btn-fullscreen" class="icon-btn" title="Toggle Fullscreen">
+                <svg viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <div id="hint">Drag to Explore · Scroll to Zoom</div>
+
+    <!-- Glassmorphic Bottom Dock -->
+    <div id="dock-container">
+        <button id="btn-reel" class="dock-btn" title="Optimal Cinematic Perspective">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+            </svg>
+            <span>Cinematic</span>
+        </button>
+        <button id="btn-top" class="dock-btn active" title="Top-Down Mandala View">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            <span>Top Mandala</span>
+        </button>
+        <button id="btn-side" class="dock-btn" title="Side Profile Perspective">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+            </svg>
+            <span>Profile</span>
+        </button>
+        <div class="dock-divider"></div>
+        <button id="btn-bloom" class="dock-btn" title="Replay Tree Branch & Bloom Intro">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.5a1 1 0 0 0 1.41 1.41l.88-.88A8.94 8.94 0 0 0 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7z" />
+            </svg>
+            <span>Intro & Bloom</span>
+        </button>
+        <button id="btn-rotate" class="dock-btn active" title="Toggle Auto-Rotation">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" />
+            </svg>
+            <span>Orbit</span>
+        </button>
+        <button id="btn-glow" class="dock-btn active" title="Toggle Starlight Tips">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z" />
+            </svg>
+            <span>Sparkles</span>
+        </button>
+        <div class="dock-divider"></div>
+        <button id="btn-hide-ui" class="dock-btn" title="Hide UI for Immersion">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Interactive Creator Watermark -->
+    <div id="watermark" title="Created by Aritra · Click for celestial spark">
+        <span class="wm-sparkle">✦</span>
+        <span class="wm-text">Created by <strong class="wm-name">Aritra</strong></span>
+    </div>
+    <div id="wm-toast">Crafted with 🪷 Three.js by Aritra</div>
+
+    <!-- Floating button to restore UI when hidden -->
+    <button id="btn-show-ui" title="Show Controls">
+        <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;">
+            <path
+                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+        </svg>
+    </button>
+
+    <!-- Luxury Loading Screen -->
+    <div id="loader">
+        <div class="loader-halo">
+            <div class="loader-ring"></div>
+            <div class="loader-core"></div>
+        </div>
+        <div class="loader-text">Sculpting Crystal Lotus</div>
+    </div>
+
+    <script>
+        // ============================================================
+        // PROCEDURAL ASSET GENERATORS (Zero external image dependencies)
+        // ============================================================
+
+        // 1. Crisp Starburst / Starlight Flare Texture for Petal Tips
+        function generateSparkleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const cx = 64, cy = 64;
+
+            ctx.clearRect(0, 0, 128, 128);
+
+            const radGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 56);
+            radGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            radGrad.addColorStop(0.12, 'rgba(255, 235, 160, 0.95)');
+            radGrad.addColorStop(0.35, 'rgba(255, 140, 60, 0.45)');
+            radGrad.addColorStop(0.7, 'rgba(240, 60, 120, 0.12)');
+            radGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = radGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 56, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 4-point diffraction spike
+            ctx.save();
+            for (let i = 0; i < 2; i++) {
+                ctx.rotate(Math.PI / 2);
+                ctx.translate(i === 0 ? 0 : -128, i === 0 ? -128 : 0);
+
+                const spikeGrad = ctx.createLinearGradient(0, cy, 128, cy);
+                spikeGrad.addColorStop(0, 'transparent');
+                spikeGrad.addColorStop(0.42, 'rgba(255, 220, 140, 0.25)');
+                spikeGrad.addColorStop(0.5, 'rgba(255, 255, 255, 1)');
+                spikeGrad.addColorStop(0.58, 'rgba(255, 220, 140, 0.25)');
+                spikeGrad.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = spikeGrad;
+                ctx.beginPath();
+                ctx.moveTo(8, cy);
+                ctx.lineTo(cx, cy - 3);
+                ctx.lineTo(120, cy);
+                ctx.lineTo(cx, cy + 3);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // 2. Soft Circular Glow Texture for Core Halo and Bokeh Embers
+        function generateGlowTexture(innerColor, outerColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, innerColor || 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.24, outerColor || 'rgba(255, 170, 70, 0.65)');
+            grad.addColorStop(0.65, 'rgba(240, 60, 130, 0.18)');
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const sparkleTexture = generateSparkleTexture();
+        const coreGlowTexture = generateGlowTexture('rgba(255, 255, 230, 1)', 'rgba(255, 170, 60, 0.8)');
+
+        // ============================================================
+        // THREE.JS SCENE, CAMERA & RENDERER SETUP
+        // ============================================================
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        const REEL_CAM_POS = new THREE.Vector3(0, 2.5, 5.2);
+        const REEL_CAM_TARGET = new THREE.Vector3(0, 0.55, 0);
+        const TOP_CAM_POS = new THREE.Vector3(0, 7.2, 0.01);
+        const TOP_CAM_TARGET = new THREE.Vector3(0, 0.45, 0);
+
+        // Start from Top View at the beginning as requested!
+        camera.position.copy(TOP_CAM_POS);
+        camera.lookAt(TOP_CAM_TARGET);
+
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: 'high-performance',
+            alpha: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.body.appendChild(renderer.domElement);
+
+        // OrbitControls
+        let controls;
+        if (typeof THREE.OrbitControls !== 'undefined') {
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.copy(TOP_CAM_TARGET);
+            controls.maxDistance = 14;
+            controls.minDistance = 2.5;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05;
+        }
+
+        // ============================================================
+        // POST-PROCESSING: UNREAL BLOOM
+        // ============================================================
+        let composer = null;
+        if (typeof THREE.EffectComposer !== 'undefined' && typeof THREE.UnrealBloomPass !== 'undefined') {
+            composer = new THREE.EffectComposer(renderer);
+            const renderPass = new THREE.RenderPass(scene, camera);
+            composer.addPass(renderPass);
+
+            const bloomPass = new THREE.UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                0.65,  // Controlled, elegant glow
+                0.28,  // Crisp halo
+                0.80   // High threshold: ONLY starlight tips and inner core glow!
+            );
+            composer.addPass(bloomPass);
+        }
+
+        // ============================================================
+        // LIGHTING ARCHITECTURE
+        // ============================================================
+        const ambientLight = new THREE.AmbientLight(0x180824, 0.7);
+        scene.add(ambientLight);
+
+        // Center golden heart light
+        const centerLight = new THREE.PointLight(0xffa834, 1.6, 8, 1.5);
+        centerLight.position.set(0, 0.6, 0);
+        scene.add(centerLight);
+
+        // Rose/Magenta fill light above
+        const topFillLight = new THREE.PointLight(0xff4d94, 0.9, 10, 1.5);
+        topFillLight.position.set(0, 3.2, 1);
+        scene.add(topFillLight);
+
+        // Warm key directional light
+        const frontLight = new THREE.DirectionalLight(0xffeedd, 0.45);
+        frontLight.position.set(0, 3, 5);
+        scene.add(frontLight);
+
+        // Violet back rim light
+        const backRimLight = new THREE.DirectionalLight(0xa660ff, 0.65);
+        backRimLight.position.set(0, 2, -5);
+        scene.add(backRimLight);
+
+        // Underglow from water
+        const underGlow = new THREE.PointLight(0x7928ca, 0.8, 6, 2.0);
+        underGlow.position.set(0, -0.6, 0);
+        scene.add(underGlow);
+
+        // ============================================================
+        // LOTUS PETAL PROCEDURAL GEOMETRY
+        // ============================================================
+        function createLotusPetalGeometry(width, length, cupDepth, archAmount, tipRecurve) {
+            const uSegments = 32;
+            const vSegments = 44;
+            const positions = [];
+            const normals = [];
+            const uvs = [];
+            const indices = [];
+
+            for (let j = 0; j <= vSegments; j++) {
+                const v = j / vSegments;
+
+                let w;
+                if (v < 0.36) {
+                    const t = v / 0.36;
+                    w = 0.14 + 0.86 * Math.sin(t * Math.PI * 0.5);
+                } else {
+                    const t = (v - 0.36) / (1.0 - 0.36);
+                    w = Math.cos(t * Math.PI * 0.5);
+                    w = Math.pow(w, 0.85);
+                }
+                const currentWidth = w * width;
+
+                const arch = Math.sin(v * Math.PI * 0.88) * archAmount - Math.pow(v, 2.6) * tipRecurve;
+                const y = v * length;
+
+                for (let i = 0; i <= uSegments; i++) {
+                    const uNorm = i / uSegments;
+                    const u = (uNorm - 0.5) * 2.0;
+
+                    const x = u * currentWidth;
+                    const cupProfile = Math.sin(v * Math.PI * 0.88);
+                    const cup = Math.pow(Math.abs(u), 1.65) * cupDepth * (0.25 + 0.75 * cupProfile);
+
+                    const z = arch + cup;
+
+                    positions.push(x, y, z);
+                    uvs.push(uNorm, v);
+                }
+            }
+
+            for (let j = 0; j < vSegments; j++) {
+                for (let i = 0; i < uSegments; i++) {
+                    const a = j * (uSegments + 1) + i;
+                    const b = a + 1;
+                    const c = a + (uSegments + 1);
+                    const d = c + 1;
+
+                    indices.push(a, c, b);
+                    indices.push(b, c, d);
+                }
+            }
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geo.setIndex(indices);
+            geo.computeVertexNormals();
+
+            return geo;
+        }
+
+        // ============================================================
+        // CRYSTAL GLASS PETAL SHADER (High clarity, sharp edges)
+        // ============================================================
+        const PetalShader = {
+            uniforms: {
+                uBaseColor: { value: new THREE.Color(0xfa7a28) },   // Warm golden amber base
+                uMidColor: { value: new THREE.Color(0xe02868) },    // Deep rich crystal rose
+                uOuterColor: { value: new THREE.Color(0x9933cc) },  // Luminous crystal violet
+                uEdgeColor: { value: new THREE.Color(0xffd8ec) },   // Fine rose-crystal rim
+                uTipColor: { value: new THREE.Color(0xffe680) },    // Golden starlight tip
+                uLightPos: { value: new THREE.Vector3(0, 0.6, 0) },
+                uTime: { value: 0 },
+                uOpacity: { value: 0.92 },
+                uTipGlowBoost: { value: 1.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                varying vec3 vWorldPosition;
+
+                void main() {
+                    vUv = uv;
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPos.xyz;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    vViewPosition = -mvPosition.xyz;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                varying vec3 vWorldPosition;
+
+                uniform vec3 uBaseColor;
+                uniform vec3 uMidColor;
+                uniform vec3 uOuterColor;
+                uniform vec3 uEdgeColor;
+                uniform vec3 uTipColor;
+                uniform vec3 uLightPos;
+                uniform float uTime;
+                uniform float uOpacity;
+                uniform float uTipGlowBoost;
+
+                void main() {
+                    vec3 N = normalize(vNormal);
+                    if (!gl_FrontFacing) N = -N;
+                    vec3 V = normalize(vViewPosition);
+
+                    float v = vUv.y;
+                    float u = abs(vUv.x - 0.5) * 2.0;
+
+                    // 1. Rich crystal gradient from base to tip
+                    vec3 col;
+                    if (v < 0.28) {
+                        float t = smoothstep(0.0, 0.28, v);
+                        col = mix(uBaseColor, uMidColor, t);
+                    } else if (v < 0.8) {
+                        float t = smoothstep(0.28, 0.8, v);
+                        col = mix(uMidColor, uOuterColor, t);
+                    } else {
+                        float t = smoothstep(0.8, 1.0, v);
+                        col = mix(uOuterColor, uTipColor * 0.9, t);
+                    }
+
+                    // 2. Hair-thin crystal edge highlight (NOT thick white!)
+                    float NdotV = clamp(dot(N, V), 0.0, 1.0);
+                    float fresnel = pow(1.0 - NdotV, 3.2);
+                    float edgeSharp = smoothstep(0.96, 0.998, u);
+                    vec3 edgeOutline = uEdgeColor * (edgeSharp * 0.9 + fresnel * 0.4);
+                    col += edgeOutline;
+
+                    // 3. Delicate luminous veins with flowing golden energy pulse
+                    float veinPattern = sin((vUv.x - 0.5) * 36.0 + sin(v * 6.0) * 0.35);
+                    veinPattern = smoothstep(0.80, 0.99, veinPattern);
+                    float veinMask = (1.0 - pow(u, 2.0)) * smoothstep(0.06, 0.28, v) * (1.0 - smoothstep(0.88, 1.0, v));
+
+                    // Luminous wave pulsating up the petals from core to tip
+                    float energyWave = sin(v * 6.5 - uTime * 2.2) * 0.5 + 0.5;
+                    float energyBeam = pow(energyWave, 4.0);
+
+                    col += vec3(0.3, 0.15, 0.25) * veinPattern * veinMask * (1.0 + energyBeam * 1.5);
+                    col += vec3(0.35, 0.22, 0.10) * energyBeam * smoothstep(0.08, 0.85, v) * (1.0 - u * 0.4);
+
+                    // 4. Center spine ridge line
+                    float spine = 1.0 - smoothstep(0.0, 0.05, abs(vUv.x - 0.5));
+                    col += vec3(0.2, 0.12, 0.06) * spine * smoothstep(0.08, 0.85, v);
+
+                    // 5. Backlight translucency from golden core
+                    vec3 lightDir = normalize(uLightPos - vWorldPosition);
+                    float distToLight = length(uLightPos - vWorldPosition);
+                    float lightAtten = 1.0 / (1.0 + 0.5 * distToLight * distToLight);
+                    float sss = pow(clamp(dot(V, -lightDir), 0.0, 1.0), 3.2);
+                    col += vec3(0.45, 0.22, 0.08) * sss * lightAtten;
+
+                    // 6. Subtle glass specular reflection
+                    vec3 H = normalize(V - lightDir);
+                    float spec1 = pow(clamp(dot(N, H), 0.0, 1.0), 64.0);
+                    vec3 keyDir = normalize(vec3(0.0, 2.5, 4.0) - vWorldPosition);
+                    vec3 H2 = normalize(V + keyDir);
+                    float spec2 = pow(clamp(dot(N, H2), 0.0, 1.0), 80.0);
+                    col += vec3(0.35, 0.3, 0.25) * (spec1 * 0.4 + spec2 * 0.5);
+
+                    // 7. Apex golden starlight point
+                    float tipGlow = smoothstep(0.93, 1.0, v);
+                    col += uTipColor * tipGlow * 2.2 * uTipGlowBoost;
+
+                    // 8. Crystal Glass Clarity (true translucency)
+                    float alpha = mix(0.72, 0.98, edgeSharp * 0.85 + fresnel * 0.3 + tipGlow * 0.5);
+                    alpha = clamp(alpha * uOpacity, 0.0, 1.0);
+
+                    gl_FragColor = vec4(col, alpha);
+                }
+            `
+        };
+
+        function createPetalMaterial(baseCol, midCol, outerCol) {
+            const mat = new THREE.ShaderMaterial({
+                uniforms: THREE.UniformsUtils.clone(PetalShader.uniforms),
+                vertexShader: PetalShader.vertexShader,
+                fragmentShader: PetalShader.fragmentShader,
+                side: THREE.DoubleSide,
+                transparent: true,
+                depthWrite: true,
+                depthTest: true,
+                blending: THREE.NormalBlending
+            });
+            if (baseCol) mat.uniforms.uBaseColor.value.set(baseCol);
+            if (midCol) mat.uniforms.uMidColor.value.set(midCol);
+            if (outerCol) mat.uniforms.uOuterColor.value.set(outerCol);
+            return mat;
+        }
+
+        // ============================================================
+        // BUILD LOTUS FLOWER STRUCTURE
+        // ============================================================
+        const lotusGroup = new THREE.Group();
+        // Perfectly upright and level - spins with flawless symmetry
+        lotusGroup.rotation.set(0, 0, 0);
+        lotusGroup.position.set(0, 0, 0);
+
+        const allPetalItems = [];
+        const tipSparkleMeshes = [];
+
+        // 4 Concentric Sculpted Petal Layers (Total: 36 petals - clean, uncluttered, radiant crystal geometry)
+        const LAYER_CONFIG = [
+            {
+                count: 6,
+                width: 0.96,
+                length: 1.70,
+                cupDepth: 0.42,
+                archAmount: 0.28,
+                tipRecurve: 0.08,
+                yPos: 0.46,
+                radius: 0.36,
+                openAngle: 0.44,
+                mat: createPetalMaterial(0xff9033, 0xf43f7e, 0xdb2777)
+            },
+            {
+                count: 8,
+                width: 1.28,
+                length: 2.38,
+                cupDepth: 0.54,
+                archAmount: 0.54,
+                tipRecurve: 0.16,
+                yPos: 0.35,
+                radius: 0.50,
+                openAngle: 0.76,
+                mat: createPetalMaterial(0xf56522, 0xe11d68, 0xc026d3)
+            },
+            {
+                count: 10,
+                width: 1.58,
+                length: 3.10,
+                cupDepth: 0.62,
+                archAmount: 0.85,
+                tipRecurve: 0.26,
+                yPos: 0.23,
+                radius: 0.68,
+                openAngle: 1.10,
+                mat: createPetalMaterial(0xee4b1e, 0xbe185d, 0x9333ea)
+            },
+            {
+                count: 12,
+                width: 1.88,
+                length: 3.85,
+                cupDepth: 0.66,
+                archAmount: 1.22,
+                tipRecurve: 0.38,
+                yPos: 0.10,
+                radius: 0.88,
+                openAngle: 1.45,
+                mat: createPetalMaterial(0xcc2916, 0x881337, 0x6b21a8)
+            }
+        ];
+
+        const sparkleSpriteMat = new THREE.SpriteMaterial({
+            map: sparkleTexture,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.92,
+            depthWrite: false
+        });
+
+        const tipBeadGeo = new THREE.SphereGeometry(0.024, 10, 10);
+        const tipBeadMat = new THREE.MeshBasicMaterial({ color: 0xfff0aa });
+
+        LAYER_CONFIG.forEach((cfg, layerIdx) => {
+            const geo = createLotusPetalGeometry(cfg.width, cfg.length, cfg.cupDepth, cfg.archAmount, cfg.tipRecurve);
+            const staggerAngle = layerIdx * 0.32;
+
+            for (let i = 0; i < cfg.count; i++) {
+                const azimuth = (i / cfg.count) * Math.PI * 2 + staggerAngle;
+
+                const pivot = new THREE.Group();
+                pivot.position.set(0, cfg.yPos, 0);
+                pivot.rotation.y = azimuth;
+
+                const mesh = new THREE.Mesh(geo, cfg.mat);
+                mesh.position.set(0, 0, cfg.radius);
+                mesh.rotation.x = 0;
+
+                pivot.add(mesh);
+                lotusGroup.add(pivot);
+
+                // Tip Starlight Glow
+                const tipGroup = new THREE.Group();
+                const tipY = cfg.length;
+                const tipZ = Math.sin(Math.PI * 0.88) * cfg.archAmount - cfg.tipRecurve;
+                tipGroup.position.set(0, tipY, tipZ);
+
+                const flareSprite = new THREE.Sprite(sparkleSpriteMat.clone());
+                const flareScale = 0.22 + layerIdx * 0.035;
+                flareSprite.scale.set(flareScale, flareScale, 1);
+                tipGroup.add(flareSprite);
+
+                const bead = new THREE.Mesh(tipBeadGeo, tipBeadMat);
+                tipGroup.add(bead);
+
+                mesh.add(tipGroup);
+                tipSparkleMeshes.push({ sprite: flareSprite, bead: bead, baseScale: flareScale, phase: i * 0.5 + layerIdx });
+
+                allPetalItems.push({
+                    mesh: mesh,
+                    targetAngle: cfg.openAngle,
+                    layerIdx: layerIdx,
+                    delay: layerIdx * 0.16 + (i / cfg.count) * 0.08
+                });
+            }
+        });
+
+        // ============================================================
+        // LOTUS CENTER: RADIANT SEED POD & TIERED GOLDEN STAMENS
+        // ============================================================
+        const centerGroup = new THREE.Group();
+        centerGroup.position.set(0, 0.48, 0);
+
+        // 1. Classical Lotus Seed Pod (Golden carpellary receptacle)
+        const podGeo = new THREE.CylinderGeometry(0.36, 0.24, 0.30, 32);
+        const podMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffb833,
+            emissive: 0xff8811,
+            emissiveIntensity: 0.55,
+            roughness: 0.2,
+            metalness: 0.1,
+            clearcoat: 0.8
+        });
+        const podMesh = new THREE.Mesh(podGeo, podMat);
+        podMesh.position.y = 0.15;
+        centerGroup.add(podMesh);
+
+        // Flat glowing golden top disc
+        const topDiscGeo = new THREE.CircleGeometry(0.355, 32);
+        const topDiscMat = new THREE.MeshBasicMaterial({
+            color: 0xffea77,
+            side: THREE.DoubleSide
+        });
+        const topDisc = new THREE.Mesh(topDiscGeo, topDiscMat);
+        topDisc.rotation.x = -Math.PI / 2;
+        topDisc.position.y = 0.302;
+        centerGroup.add(topDisc);
+
+        // Seed pores / carpels
+        const carpelGeo = new THREE.SphereGeometry(0.024, 8, 8);
+        const carpelMat = new THREE.MeshBasicMaterial({ color: 0xe65c00 });
+        for (let r = 0; r < 3; r++) {
+            const numCarpels = r === 0 ? 1 : (r === 1 ? 6 : 12);
+            const radius = r * 0.105;
+            for (let i = 0; i < numCarpels; i++) {
+                const a = (i / numCarpels) * Math.PI * 2 + r * 0.4;
+                const carpel = new THREE.Mesh(carpelGeo, carpelMat);
+                carpel.position.set(Math.cos(a) * radius, 0.306, Math.sin(a) * radius);
+                centerGroup.add(carpel);
+            }
+        }
+
+        // Inner glowing core light
+        const coreInnerLight = new THREE.PointLight(0xffb833, 2.2, 5, 1.2);
+        coreInnerLight.position.set(0, 0.42, 0);
+        centerGroup.add(coreInnerLight);
+
+        // Volumetric central glow halo
+        const coreSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: coreGlowTexture,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.85,
+            depthWrite: false
+        }));
+        coreSprite.scale.set(1.3, 1.3, 1);
+        coreSprite.position.set(0, 0.32, 0);
+        centerGroup.add(coreSprite);
+
+        // 2. Crown of 72 Delicate Golden Stamens in 3 tiers
+        const stamenCount = 72;
+        const stamenItems = [];
+        const stamenFilamentMat = new THREE.LineBasicMaterial({
+            color: 0xffd266,
+            transparent: true,
+            opacity: 0.9
+        });
+        const antherGeo = new THREE.SphereGeometry(0.026, 8, 8);
+        const antherMat = new THREE.MeshBasicMaterial({ color: 0xfff6aa });
+
+        for (let i = 0; i < stamenCount; i++) {
+            const tier = i % 3;
+            const angle = (i / stamenCount) * Math.PI * 2;
+
+            const rBase = 0.32 + tier * 0.035;
+            const rTop = 0.38 + tier * 0.11 + Math.random() * 0.03;
+            const height = 0.34 + tier * 0.14 + Math.random() * 0.06;
+
+            const p0 = new THREE.Vector3(Math.cos(angle) * rBase, 0.10, Math.sin(angle) * rBase);
+            const p1 = new THREE.Vector3(Math.cos(angle) * (rBase + 0.05), height * 0.55, Math.sin(angle) * (rBase + 0.05));
+            const p2 = new THREE.Vector3(Math.cos(angle) * rTop, height, Math.sin(angle) * rTop);
+
+            const curve = new THREE.QuadraticBezierCurve3(p0, p1, p2);
+            const pts = curve.getPoints(10);
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const line = new THREE.Line(lineGeo, stamenFilamentMat);
+            centerGroup.add(line);
+
+            // Radiant golden glowing anther
+            const anther = new THREE.Mesh(antherGeo, antherMat);
+            anther.position.copy(p2);
+            centerGroup.add(anther);
+
+            stamenItems.push({ line, anther, p0, p1, p2, height, phase: i * 0.22 });
+        }
+
+        lotusGroup.add(centerGroup);
+
+        // Subtle dark stem underneath
+        const stemCurve = new THREE.CubicBezierCurve3(
+            new THREE.Vector3(0, 0.2, 0),
+            new THREE.Vector3(0, -0.6, 0),
+            new THREE.Vector3(0.05, -1.2, 0.02),
+            new THREE.Vector3(0, -2.0, 0)
+        );
+        const stemGeo = new THREE.TubeGeometry(stemCurve, 20, 0.12, 12, false);
+        const stemMat = new THREE.MeshStandardMaterial({
+            color: 0x2e1233,
+            emissive: 0x140618,
+            roughness: 0.6
+        });
+        const stem = new THREE.Mesh(stemGeo, stemMat);
+        lotusGroup.add(stem);
+
+        scene.add(lotusGroup);
+
+        // ============================================================
+        // CELESTIAL TREE BRANCHES / SACRED ROOTS INTRO SYSTEM
+        // Radiant golden-crystal branching lines growing outward beneath the lotus
+        // ============================================================
+        const branchGroup = new THREE.Group();
+        branchGroup.position.set(0, 0.04, 0);
+        lotusGroup.add(branchGroup);
+
+        const branchLineMat = new THREE.LineBasicMaterial({
+            color: 0xffca66,
+            transparent: true,
+            opacity: 0.90,
+            blending: THREE.AdditiveBlending
+        });
+
+        const twigLineMat = new THREE.LineBasicMaterial({
+            color: 0xf58ea8,
+            transparent: true,
+            opacity: 0.80,
+            blending: THREE.AdditiveBlending
+        });
+
+        const branchTipMat = new THREE.SpriteMaterial({
+            map: sparkleTexture,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.95,
+            depthWrite: false
+        });
+
+        const branchItems = [];
+        const numMainBranches = 8;
+
+        for (let b = 0; b < numMainBranches; b++) {
+            const baseAngle = (b / numMainBranches) * Math.PI * 2;
+
+            // 1. Primary Branch (curves out from r=0.1 to r=5.2)
+            const p0 = new THREE.Vector3(0, 0.03, 0);
+            const p1 = new THREE.Vector3(0.9 * Math.cos(baseAngle + 0.12), 0.025, 0.9 * Math.sin(baseAngle + 0.12));
+            const p2 = new THREE.Vector3(2.0 * Math.cos(baseAngle - 0.08), 0.018, 2.0 * Math.sin(baseAngle - 0.08));
+            const p3 = new THREE.Vector3(3.2 * Math.cos(baseAngle + 0.15), 0.010, 3.2 * Math.sin(baseAngle + 0.15));
+            const p4 = new THREE.Vector3(4.3 * Math.cos(baseAngle - 0.04), 0.004, 4.3 * Math.sin(baseAngle - 0.04));
+            const p5 = new THREE.Vector3(5.2 * Math.cos(baseAngle + 0.22), -0.002, 5.2 * Math.sin(baseAngle + 0.22));
+
+            const mainCurve = new THREE.CatmullRomCurve3([p0, p1, p2, p3, p4, p5], false, 'centripetal');
+            const mainPts = mainCurve.getPoints(120);
+            const mainGeo = new THREE.BufferGeometry().setFromPoints(mainPts);
+            mainGeo.setDrawRange(0, 0);
+            const mainLine = new THREE.Line(mainGeo, branchLineMat);
+            branchGroup.add(mainLine);
+
+            // Tip Starburst Sprite & Golden Bead for Main Branch
+            const mainTipGroup = new THREE.Group();
+            mainTipGroup.position.copy(p5);
+            mainTipGroup.scale.set(0, 0, 0);
+            const mainTipSprite = new THREE.Sprite(branchTipMat.clone());
+            mainTipSprite.scale.set(0.32, 0.32, 1);
+            mainTipGroup.add(mainTipSprite);
+            const mainTipBead = new THREE.Mesh(tipBeadGeo, tipBeadMat);
+            mainTipGroup.add(mainTipBead);
+            branchGroup.add(mainTipGroup);
+
+            branchItems.push({
+                geo: mainGeo,
+                totalPoints: mainPts.length,
+                startProgress: 0.0,
+                endProgress: 0.65,
+                tipGroup: mainTipGroup,
+                tipScale: 0.32,
+                phase: b * 0.4
+            });
+
+            // 2. Sub-branch / Twig 1 (sprouts from p2 at r=2.0)
+            const t1_0 = p2.clone();
+            const t1_1 = new THREE.Vector3(2.8 * Math.cos(baseAngle + 0.32), 0.014, 2.8 * Math.sin(baseAngle + 0.32));
+            const t1_2 = new THREE.Vector3(3.7 * Math.cos(baseAngle + 0.48), 0.005, 3.7 * Math.sin(baseAngle + 0.48));
+            const twig1Curve = new THREE.CatmullRomCurve3([t1_0, t1_1, t1_2], false, 'centripetal');
+            const twig1Pts = twig1Curve.getPoints(60);
+            const twig1Geo = new THREE.BufferGeometry().setFromPoints(twig1Pts);
+            twig1Geo.setDrawRange(0, 0);
+            const twig1Line = new THREE.Line(twig1Geo, twigLineMat);
+            branchGroup.add(twig1Line);
+
+            const t1TipGroup = new THREE.Group();
+            t1TipGroup.position.copy(t1_2);
+            t1TipGroup.scale.set(0, 0, 0);
+            const t1TipSprite = new THREE.Sprite(branchTipMat.clone());
+            t1TipSprite.scale.set(0.24, 0.24, 1);
+            t1TipGroup.add(t1TipSprite);
+            branchGroup.add(t1TipGroup);
+
+            branchItems.push({
+                geo: twig1Geo,
+                totalPoints: twig1Pts.length,
+                startProgress: 0.28,
+                endProgress: 0.82,
+                tipGroup: t1TipGroup,
+                tipScale: 0.24,
+                phase: b * 0.4 + 1.0
+            });
+
+            // 3. Sub-branch / Twig 2 (sprouts from p3 at r=3.2)
+            const t2_0 = p3.clone();
+            const t2_1 = new THREE.Vector3(4.0 * Math.cos(baseAngle - 0.28), 0.008, 4.0 * Math.sin(baseAngle - 0.28));
+            const t2_2 = new THREE.Vector3(4.8 * Math.cos(baseAngle - 0.40), 0.001, 4.8 * Math.sin(baseAngle - 0.40));
+            const twig2Curve = new THREE.CatmullRomCurve3([t2_0, t2_1, t2_2], false, 'centripetal');
+            const twig2Pts = twig2Curve.getPoints(60);
+            const twig2Geo = new THREE.BufferGeometry().setFromPoints(twig2Pts);
+            twig2Geo.setDrawRange(0, 0);
+            const twig2Line = new THREE.Line(twig2Geo, twigLineMat);
+            branchGroup.add(twig2Line);
+
+            const t2TipGroup = new THREE.Group();
+            t2TipGroup.position.copy(t2_2);
+            t2TipGroup.scale.set(0, 0, 0);
+            const t2TipSprite = new THREE.Sprite(branchTipMat.clone());
+            t2TipSprite.scale.set(0.22, 0.22, 1);
+            t2TipGroup.add(t2TipSprite);
+            branchGroup.add(t2TipGroup);
+
+            branchItems.push({
+                geo: twig2Geo,
+                totalPoints: twig2Pts.length,
+                startProgress: 0.48,
+                endProgress: 1.00,
+                tipGroup: t2TipGroup,
+                tipScale: 0.22,
+                phase: b * 0.4 + 2.0
+            });
+        }
+
+        // ============================================================
+        // EXPANDING CELESTIAL SHOCKWAVE RING AT CORE IGNITION
+        // ============================================================
+        const shockwaveGeo = new THREE.RingGeometry(0.12, 0.32, 64);
+        shockwaveGeo.rotateX(-Math.PI / 2);
+        const shockwaveMat = new THREE.MeshBasicMaterial({
+            color: 0xffd266,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const shockwaveMesh = new THREE.Mesh(shockwaveGeo, shockwaveMat);
+        shockwaveMesh.position.set(0, 0.38, 0);
+        lotusGroup.add(shockwaveMesh);
+        let shockwaveProgress = 0;
+        let shockwaveActive = false;
+
+        // ============================================================
+        // INTRO STARDUST CONVERGENCE VORTEX
+        // 220 celestial particles spiraling inward into the heart
+        // ============================================================
+        const introParticleCount = 220;
+        const introPositions = new Float32Array(introParticleCount * 3);
+        const introData = [];
+
+        for (let i = 0; i < introParticleCount; i++) {
+            const r0 = 4.2 + Math.random() * 8.5;
+            const th0 = Math.random() * Math.PI * 2;
+            const y0 = Math.random() * 4.0 - 0.5;
+            const speed = 0.85 + Math.random() * 0.5;
+            introData.push({ r0, th0, y0, speed, phase: Math.random() * Math.PI * 2 });
+            introPositions[i * 3 + 0] = Math.cos(th0) * r0;
+            introPositions[i * 3 + 1] = y0;
+            introPositions[i * 3 + 2] = Math.sin(th0) * r0;
+        }
+
+        const introGeo = new THREE.BufferGeometry();
+        introGeo.setAttribute('position', new THREE.Float32BufferAttribute(introPositions, 3));
+        const introMat = new THREE.PointsMaterial({
+            map: sparkleTexture,
+            size: 0.32,
+            transparent: true,
+            opacity: 0.90,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            color: 0xffeedd
+        });
+        const introParticleSystem = new THREE.Points(introGeo, introMat);
+        scene.add(introParticleSystem);
+
+        // ============================================================
+        // FLOATING DUST MOTES & BOKEH EMBERS
+        // ============================================================
+        const particleCount = 180;
+        const pGeo = new THREE.BufferGeometry();
+        const pPositions = new Float32Array(particleCount * 3);
+        const pSpeeds = new Float32Array(particleCount);
+        const pPhases = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            pPositions[i * 3 + 0] = (Math.random() - 0.5) * 14;
+            pPositions[i * 3 + 1] = Math.random() * 6.5 - 0.5;
+            pPositions[i * 3 + 2] = (Math.random() - 0.5) * 14;
+            pSpeeds[i] = 0.3 + Math.random() * 0.7;
+            pPhases[i] = Math.random() * Math.PI * 2;
+        }
+
+        pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPositions, 3));
+
+        const pMat = new THREE.PointsMaterial({
+            map: coreGlowTexture,
+            size: 0.22,
+            transparent: true,
+            opacity: 0.75,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            color: 0xffe0b2
+        });
+
+        const particleSystem = new THREE.Points(pGeo, pMat);
+        scene.add(particleSystem);
+
+        // ============================================================
+        // ANIMATION CONTROLLER & STATE
+        // ============================================================
+        let introTimer = 0;
+        let isIntroActive = true;
+        let bloomProgress = 0;
+        let isBlooming = false;
+        let autoRotate = true;
+        let sparklesEnabled = true;
+
+        function triggerIntroAndBloom() {
+            introTimer = 0;
+            isIntroActive = true;
+            shockwaveProgress = 0;
+            shockwaveActive = false;
+            shockwaveMat.opacity = 0;
+            bloomProgress = 0;
+            isBlooming = false;
+            introMat.opacity = 0.90;
+
+            // Reset petals closed
+            allPetalItems.forEach(p => {
+                p.mesh.rotation.x = 0;
+                p.mesh.rotation.z = 0;
+            });
+
+            // Reset branches hidden
+            branchItems.forEach(b => {
+                b.geo.setDrawRange(0, 0);
+                if (b.tipGroup) b.tipGroup.scale.set(0, 0, 0);
+            });
+        }
+
+        function triggerBloomAnimation() {
+            triggerIntroAndBloom();
+        }
+
+        // Camera Smooth Transitions
+        let targetCamPos = null;
+        let targetCamTarget = null;
+
+        function setCameraPreset(pos, target, activeBtn) {
+            targetCamPos = pos.clone();
+            targetCamTarget = target.clone();
+            [btnReel, btnTop, btnSide].forEach(b => b && b.classList.remove('active'));
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        // ============================================================
+        // CELESTIAL AMBIENT SOUNDTRACK (Dual High-Fidelity Tracks)
+        // Authentic Tibetan Singing Bowls, Zen Bells, & Ethereal Pads
+        // ============================================================
+        const TRACKS = [
+            { name: "Zen Meditation", file: "zen-meditation.mp3" },
+            { name: "Celestial Ambient", file: "ambient-music.mp3" }
+        ];
+        let currentTrackIdx = 0;
+        let isAudioPlaying = false;
+        let fadeInterval = null;
+
+        const bgAudio = new Audio();
+        bgAudio.src = TRACKS[currentTrackIdx].file;
+        bgAudio.loop = true;
+        bgAudio.preload = "auto";
+        bgAudio.volume = 0;
+
+        function fadeInAudio(targetVolume = 0.65, duration = 1500) {
+            clearInterval(fadeInterval);
+            const stepMs = 50;
+            const steps = Math.max(1, duration / stepMs);
+            const volStep = targetVolume / steps;
+            fadeInterval = setInterval(() => {
+                if (bgAudio.volume + volStep >= targetVolume) {
+                    bgAudio.volume = targetVolume;
+                    clearInterval(fadeInterval);
+                } else {
+                    bgAudio.volume += volStep;
+                }
+            }, stepMs);
+        }
+
+        function fadeOutAudio(duration = 800, onComplete) {
+            clearInterval(fadeInterval);
+            const stepMs = 50;
+            const steps = Math.max(1, duration / stepMs);
+            const volStep = Math.max(0.01, bgAudio.volume / steps);
+            fadeInterval = setInterval(() => {
+                if (bgAudio.volume - volStep <= 0.01) {
+                    bgAudio.volume = 0;
+                    bgAudio.pause();
+                    clearInterval(fadeInterval);
+                    if (onComplete) onComplete();
+                } else {
+                    bgAudio.volume -= volStep;
+                }
+            }, stepMs);
+        }
+
+        function toggleAudio() {
+            const btnAudio = document.getElementById('btn-audio');
+            const trackPill = document.getElementById('btn-track');
+
+            if (!isAudioPlaying) {
+                bgAudio.volume = 0;
+                const playPromise = bgAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isAudioPlaying = true;
+                        if (btnAudio) btnAudio.classList.add('active');
+                        if (trackPill) trackPill.classList.add('playing');
+                        fadeInAudio(0.65, 1500);
+                    }).catch(err => {
+                        console.warn("Audio autoplay blocked by browser:", err);
+                    });
+                }
+            } else {
+                isAudioPlaying = false;
+                if (btnAudio) btnAudio.classList.remove('active');
+                if (trackPill) trackPill.classList.remove('playing');
+                fadeOutAudio(800);
+            }
+        }
+
+        function switchTrack() {
+            currentTrackIdx = (currentTrackIdx + 1) % TRACKS.length;
+            const track = TRACKS[currentTrackIdx];
+            const trackNameEl = document.getElementById('track-name');
+            if (trackNameEl) trackNameEl.textContent = track.name;
+
+            if (isAudioPlaying) {
+                fadeOutAudio(400, () => {
+                    bgAudio.src = track.file;
+                    bgAudio.play().then(() => {
+                        fadeInAudio(0.65, 1200);
+                    }).catch(() => {});
+                });
+            } else {
+                bgAudio.src = track.file;
+            }
+        }
+
+        // ============================================================
+        // UI BUTTON EVENT LISTENERS
+        // ============================================================
+        const btnReel = document.getElementById('btn-reel');
+        const btnTop = document.getElementById('btn-top');
+        const btnSide = document.getElementById('btn-side');
+        const btnBloom = document.getElementById('btn-bloom');
+        const btnRotate = document.getElementById('btn-rotate');
+        const btnGlow = document.getElementById('btn-glow');
+        const btnAudio = document.getElementById('btn-audio');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+        const btnHideUi = document.getElementById('btn-hide-ui');
+        const btnShowUi = document.getElementById('btn-show-ui');
+        const dockContainer = document.getElementById('dock-container');
+        const hint = document.getElementById('hint');
+
+        btnReel.addEventListener('click', () => {
+            setCameraPreset(new THREE.Vector3(0, 2.5, 5.2), new THREE.Vector3(0, 0.55, 0), btnReel);
+        });
+
+        btnTop.addEventListener('click', () => {
+            setCameraPreset(new THREE.Vector3(0, 7.2, 0.01), new THREE.Vector3(0, 0.45, 0), btnTop);
+        });
+
+        btnSide.addEventListener('click', () => {
+            setCameraPreset(new THREE.Vector3(5.8, 1.2, 0.0), new THREE.Vector3(0, 0.6, 0), btnSide);
+        });
+
+        btnBloom.addEventListener('click', () => {
+            triggerIntroAndBloom();
+        });
+
+        btnRotate.addEventListener('click', () => {
+            autoRotate = !autoRotate;
+            btnRotate.classList.toggle('active', autoRotate);
+        });
+
+        btnGlow.addEventListener('click', () => {
+            sparklesEnabled = !sparklesEnabled;
+            btnGlow.classList.toggle('active', sparklesEnabled);
+            tipSparkleMeshes.forEach(t => {
+                t.sprite.visible = sparklesEnabled;
+                t.bead.visible = sparklesEnabled;
+            });
+            LAYER_CONFIG.forEach(l => {
+                l.mat.uniforms.uTipGlowBoost.value = sparklesEnabled ? 1.0 : 0.2;
+            });
+        });
+
+        btnAudio.addEventListener('click', toggleAudio);
+        const btnTrack = document.getElementById('btn-track');
+        if (btnTrack) btnTrack.addEventListener('click', switchTrack);
+
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => { });
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        });
+
+        // Hide UI for pristine immersive view
+        btnHideUi.addEventListener('click', () => {
+            dockContainer.classList.add('minimized');
+            btnShowUi.classList.add('visible');
+            hint.classList.add('hidden');
+            if (watermark) watermark.classList.add('minimized');
+        });
+
+        btnShowUi.addEventListener('click', () => {
+            dockContainer.classList.remove('minimized');
+            btnShowUi.classList.remove('visible');
+            if (watermark) watermark.classList.remove('minimized');
+        });
+
+        // ============================================================
+        // INTERACTIVE CREATOR WATERMARK
+        // ============================================================
+        const watermark = document.getElementById('watermark');
+        const wmToast = document.getElementById('wm-toast');
+        let toastTimeout;
+
+        function playWatermarkChime() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                if (!audioCtx) {
+                    audioCtx = new AudioContext();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(864, now); // 864Hz celestial high harmonic
+                osc.frequency.exponentialRampToValueAtTime(1152, now + 0.15);
+
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.85);
+            } catch (e) {}
+        }
+
+        if (watermark) {
+            watermark.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // 1. Radiant shockwave pulse through 3D crystal lotus
+                clickPulse = 1.0;
+                centerLight.intensity = 3.6;
+
+                // 2. Play peaceful celestial bell chime
+                playWatermarkChime();
+
+                // 3. Floating particle sparkle burst from click/badge
+                const rect = watermark.getBoundingClientRect();
+                const spawnX = e.clientX || (rect.left + rect.width / 2);
+                const spawnY = e.clientY || (rect.top + rect.height / 2);
+                const symbols = ['✦', '✨', '🪷', '🌸', '💫'];
+
+                for (let i = 0; i < 7; i++) {
+                    const p = document.createElement('span');
+                    p.className = 'wm-particle';
+                    p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    const dx = (Math.random() - 0.5) * 80;
+                    const dy = -(35 + Math.random() * 55);
+                    p.style.setProperty('--dx', `${dx}px`);
+                    p.style.setProperty('--dy', `${dy}px`);
+                    p.style.left = `${spawnX}px`;
+                    p.style.top = `${spawnY}px`;
+                    p.style.color = ['#fbbf24', '#f43f7e', '#a855f7', '#ffd6e7'][Math.floor(Math.random() * 4)];
+                    document.body.appendChild(p);
+                    setTimeout(() => p.remove(), 1000);
+                }
+
+                // 4. Show toast badge
+                if (wmToast) {
+                    wmToast.classList.add('show');
+                    clearTimeout(toastTimeout);
+                    toastTimeout = setTimeout(() => {
+                        wmToast.classList.remove('show');
+                    }, 2400);
+                }
+            });
+        }
+
+        // Dismiss hint on first user interaction or after 4.5 seconds
+        const dismissHint = () => {
+            hint.classList.add('hidden');
+            window.removeEventListener('pointerdown', dismissHint);
+        };
+        window.addEventListener('pointerdown', dismissHint);
+        setTimeout(dismissHint, 4500);
+
+        // Hide loader after smooth initialize
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.classList.add('fade-out');
+                setTimeout(() => loader.remove(), 1200);
+            }
+        }, 600);
+
+        // Interactive mouse parallax state
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('pointermove', (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+
+        // Interactive tap / click shockwave ripple state
+        let clickPulse = 0;
+        window.addEventListener('pointerdown', (e) => {
+            if (!e.target.closest('#dock-container, header, #btn-show-ui, #watermark')) {
+                clickPulse = 1.0;
+            }
+        });
+
+        // ============================================================
+        // MAIN ANIMATION LOOP
+        // ============================================================
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+            const elapsed = clock.getElapsedTime();
+
+            // 1. Camera interpolation when a preset is selected
+            if (targetCamPos && controls) {
+                camera.position.lerp(targetCamPos, 0.05);
+                controls.target.lerp(targetCamTarget, 0.05);
+                if (camera.position.distanceTo(targetCamPos) < 0.02) {
+                    targetCamPos = null;
+                    targetCamTarget = null;
+                }
+            }
+
+            if (controls) controls.update();
+
+            // 2. Celestial Intro System: Tree Branch Growth, Stardust Vortex & Core Ignition
+            if (isIntroActive) {
+                introTimer += dt;
+                const branchT = Math.min(1.0, introTimer / 2.0);
+                const branchEased = 1 - Math.pow(1 - branchT, 3);
+
+                // Animate tree branches growing outward beneath the lotus
+                branchItems.forEach(b => {
+                    if (branchEased <= b.startProgress) {
+                        b.geo.setDrawRange(0, 0);
+                        b.tipGroup.scale.set(0, 0, 0);
+                    } else if (branchEased >= b.endProgress) {
+                        b.geo.setDrawRange(0, b.totalPoints);
+                        const tw = 0.85 + 0.25 * Math.sin(elapsed * 4.0 + b.phase);
+                        b.tipGroup.scale.set(b.tipScale * tw, b.tipScale * tw, b.tipScale * tw);
+                    } else {
+                        const localT = (branchEased - b.startProgress) / (b.endProgress - b.startProgress);
+                        const currentPts = Math.floor(localT * b.totalPoints);
+                        b.geo.setDrawRange(0, currentPts);
+                        const s = localT * b.tipScale * 0.7;
+                        b.tipGroup.scale.set(s, s, s);
+                    }
+                });
+
+                // Animate stardust particles spiraling inward into the heart
+                if (introTimer < 2.0) {
+                    const u = Math.min(1.0, introTimer / 2.0);
+                    const easeIn = Math.pow(u, 1.8);
+                    const posArr = introGeo.attributes.position.array;
+                    for (let i = 0; i < introParticleCount; i++) {
+                        const p = introData[i];
+                        const r = p.r0 * (1.0 - easeIn);
+                        const th = p.th0 + introTimer * 4.5 + (1.2 / (r + 0.12));
+                        const y = THREE.MathUtils.lerp(p.y0, 0.48, easeIn);
+                        posArr[i * 3 + 0] = Math.cos(th) * r;
+                        posArr[i * 3 + 1] = y;
+                        posArr[i * 3 + 2] = Math.sin(th) * r;
+                    }
+                    introGeo.attributes.position.needsUpdate = true;
+                    introMat.opacity = Math.min(0.95, introTimer * 2.5);
+                } else {
+                    introMat.opacity = Math.max(0, 0.95 - (introTimer - 2.0) * 4.0);
+                }
+
+                // Core ignition & shockwave burst at 2.0s!
+                if (introTimer >= 2.0 && !isBlooming) {
+                    isBlooming = true;
+                    shockwaveActive = true;
+                    shockwaveProgress = 0;
+                    centerLight.intensity = 3.8;
+                }
+
+                if (introTimer >= 3.6) {
+                    isIntroActive = false;
+                }
+            } else {
+                // Post-intro: Branches gently breathe with cosmic light and twinkle
+                const branchGlow = 0.80 + 0.15 * Math.sin(elapsed * 1.6);
+                branchLineMat.opacity = branchGlow;
+                twigLineMat.opacity = branchGlow * 0.85;
+                branchItems.forEach(b => {
+                    const tw = 0.85 + 0.25 * Math.sin(elapsed * 3.5 + b.phase);
+                    b.tipGroup.scale.set(b.tipScale * tw, b.tipScale * tw, b.tipScale * tw);
+                });
+            }
+
+            // Expanding golden shockwave ring
+            if (shockwaveActive) {
+                shockwaveProgress += dt * 1.5;
+                const scale = 1.0 + shockwaveProgress * 18.0;
+                shockwaveMesh.scale.set(scale, scale, 1);
+                shockwaveMat.opacity = Math.max(0, (1.0 - shockwaveProgress) * 0.85);
+                if (shockwaveProgress >= 1.0) {
+                    shockwaveActive = false;
+                    shockwaveMat.opacity = 0;
+                }
+            }
+
+            // Blooming animation of petals (unfurls outward layer by layer)
+            if (isBlooming) {
+                bloomProgress += dt * 0.38;
+                if (bloomProgress >= 1.3) {
+                    bloomProgress = 1.3;
+                    isBlooming = false;
+                }
+            }
+
+            // 1. Pass time uniform to crystal petal shaders for flowing energy waves
+            LAYER_CONFIG.forEach(cfg => {
+                if (cfg.mat && cfg.mat.uniforms && cfg.mat.uniforms.uTime) {
+                    cfg.mat.uniforms.uTime.value = elapsed;
+                }
+            });
+
+            // 2. Gentle zero-gravity levitation
+            lotusGroup.position.y = Math.sin(elapsed * 0.85) * 0.06;
+
+            // 3. Blooming & Radial Breathing Wave across petals
+            allPetalItems.forEach(p => {
+                const adjustedT = Math.max(0, Math.min(1, (bloomProgress - p.delay) / 0.65));
+                const eased = 1 - Math.pow(1 - adjustedT, 3);
+
+                // Harmonious breathing wave radiating from core outward
+                const radialWave = Math.sin(elapsed * 1.3 - p.layerIdx * 0.55) * 0.024;
+                const lateralSway = Math.cos(elapsed * 0.9 + p.delay * 4.5) * 0.012;
+
+                // Interactive click shockwave ripple
+                const clickRipple = Math.sin(clickPulse * Math.PI * 1.5 - p.layerIdx * 0.6) * clickPulse * 0.04;
+
+                p.mesh.rotation.x = eased * p.targetAngle + (adjustedT >= 1 ? (radialWave + clickRipple) : 0);
+                p.mesh.rotation.z = (adjustedT >= 1 ? lateralSway : 0);
+            });
+
+            // 4. Starlight Sparkle Twinkle
+            if (sparklesEnabled) {
+                tipSparkleMeshes.forEach(t => {
+                    const twinkle = 0.8 + 0.3 * Math.sin(elapsed * 3.5 + t.phase);
+                    const s = t.baseScale * twinkle;
+                    t.sprite.scale.set(s, s, 1);
+                });
+            }
+
+            // 5. Golden Stamens Organic Sway
+            if (typeof stamenItems !== 'undefined') {
+                stamenItems.forEach(stamen => {
+                    stamen.anther.position.y = stamen.p2.y + Math.sin(elapsed * 2.0 + stamen.phase) * 0.016;
+                    stamen.anther.position.x = stamen.p2.x + Math.cos(elapsed * 1.4 + stamen.phase) * 0.008;
+                    stamen.anther.position.z = stamen.p2.z + Math.sin(elapsed * 1.4 + stamen.phase) * 0.008;
+                });
+            }
+
+            // 6. Smooth, level, symmetrical flower rotation
+            if (autoRotate) {
+                lotusGroup.rotation.y += dt * 0.12;
+            }
+            lotusGroup.rotation.x = 0;
+            lotusGroup.rotation.z = 0;
+
+            // 7. Orbiting Dynamic Colored Lights (creates moving crystal highlights)
+            topFillLight.position.x = Math.sin(elapsed * 0.35) * 2.8;
+            topFillLight.position.z = Math.cos(elapsed * 0.35) * 2.8;
+            backRimLight.position.x = -Math.sin(elapsed * 0.25) * 4.2;
+            backRimLight.position.z = -Math.cos(elapsed * 0.25) * 4.2;
+
+            // 8. Core Light & Volumetric Sprites Pulsing
+            const corePulse = 0.9 + 0.1 * Math.sin(elapsed * 2.0);
+            coreSprite.scale.set(1.3 * corePulse, 1.3 * corePulse, 1);
+            centerLight.intensity = 1.6 + 0.3 * Math.sin(elapsed * 2.2);
+            if (typeof coreInnerLight !== 'undefined') {
+                coreInnerLight.intensity = 2.2 + 0.4 * Math.sin(elapsed * 2.2);
+            }
+
+            // Click shockwave decay
+            if (clickPulse > 0.005) {
+                clickPulse *= 0.95;
+                centerLight.intensity += clickPulse * 1.2;
+            }
+
+            // 9. Cosmic Swirling Embers Spiral Vortex
+            const posArr = pGeo.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                const x = posArr[i3 + 0];
+                const z = posArr[i3 + 2];
+                const r = Math.sqrt(x * x + z * z) || 1.0;
+                const theta = Math.atan2(z, x) + 0.005 * pSpeeds[i];
+
+                posArr[i3 + 0] = Math.cos(theta) * r;
+                posArr[i3 + 2] = Math.sin(theta) * r;
+                posArr[i3 + 1] += 0.0035 * pSpeeds[i];
+
+                // Re-cycle when reaching top
+                if (posArr[i3 + 1] > 6.0) {
+                    posArr[i3 + 1] = -0.4;
+                    const newR = 1.0 + Math.random() * 5.5;
+                    const newAngle = Math.random() * Math.PI * 2;
+                    posArr[i3 + 0] = Math.cos(newAngle) * newR;
+                    posArr[i3 + 2] = Math.sin(newAngle) * newR;
+                }
+            }
+            pGeo.attributes.position.needsUpdate = true;
+
+            // 7. Render scene
+            if (composer) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
+        }
+
+        triggerIntroAndBloom();
+        animate();
+
+        // ============================================================
+        // WINDOW RESIZE HANDLER (Responsive DPR & Aspect)
+        // ============================================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>
